@@ -1,4 +1,4 @@
-const CACHE_NAME = 'capoeira-v3';
+const CACHE_NAME = 'capoeira-v4';
 
 const urlsToCache = [
   './',
