@@ -1,0 +1,1055 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Capoeira System Pro</title>
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#00a884">
+<link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3063/3063189.png">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Firebase SDKs (Compat v10) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    
+    <!-- Biblioteca de QR Code e Scanner -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+
+    <style>
+        :root {
+            --bg-dark: #0b141a;
+            --bg-panel: #111b21;
+            --bg-card: #202c33;
+            --accent: #00a884; /* Verde Premium Original */
+            --accent-hover: #008f72;
+            --text-main: #e9edef;
+            --text-dim: #8696a0;
+            --danger: #f15c6d;
+            --warning: #e5a93b;
+            --info: #3498db;
+            --radius-lg: 16px;
+            --radius-md: 12px;
+            --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * { 
+            box-sizing: border-box; 
+            -webkit-tap-highlight-color: transparent; 
+            margin: 0; padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        body { 
+            background: var(--bg-dark); 
+            color: var(--text-main); 
+            padding-bottom: 80px;
+            overflow-x: hidden;
+        }
+
+        /* Header Premium */
+        .app-bar {
+            background: var(--bg-panel); 
+            padding: 18px 20px; 
+            display: flex; 
+            align-items: center; 
+            gap: 15px; 
+            position: sticky; 
+            top: 0; 
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            border-bottom: 1px solid #222d34;
+        }
+        .app-bar h1 { font-size: 1.25rem; font-weight: 600; flex: 1; color: var(--text-main); }
+        .back-btn, .menu-btn { 
+            cursor: pointer; 
+            padding: 8px; 
+            font-size: 1.2rem; 
+            border-radius: 50%;
+            transition: var(--transition);
+        }
+        .back-btn:active, .menu-btn:active { background: rgba(255,255,255,0.1); }
+
+        /* Menu Hambúrguer (Sidebar Drawer) */
+        .sidebar {
+            position: fixed; top: 0; right: -280px; width: 280px; height: 100%;
+            background: var(--bg-panel); box-shadow: -5px 0 25px rgba(0,0,0,0.5);
+            z-index: 300; transition: cubic-bezier(0.4, 0, 0.2, 1) 0.3s;
+            padding: 24px 16px; display: flex; flex-direction: column; gap: 12px;
+            border-left: 1px solid #222d34; overflow-y: auto;
+        }
+        .sidebar.open { right: 0; }
+        .sidebar-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); z-index: 290; display: none; backdrop-filter: blur(2px);
+        }
+        .sidebar-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #222d34; padding-bottom: 15px; margin-bottom: 10px;}
+        .sidebar-title { font-weight: 600; color: var(--accent); }
+        .menu-item {
+            display: flex; align-items: center; gap: 14px; padding: 12px;
+            border-radius: var(--radius-md); cursor: pointer; transition: var(--transition);
+            color: var(--text-main); font-weight: 500; font-size: 0.95rem;
+        }
+        .menu-item:active { background: var(--bg-card); }
+        .menu-item i { width: 20px; text-align: center; font-size: 1.1rem; color: var(--text-dim); }
+        .menu-item.danger { color: var(--danger); }
+        .menu-item.danger i { color: var(--danger); }
+        .menu-section-title { font-size: 0.7rem; color: var(--accent); font-weight: 700; text-transform: uppercase; margin-top: 10px; padding-left: 12px; letter-spacing: 0.5px;}
+
+        /* Status Dashboard */
+        .dashboard-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 10px;
+            padding: 15px 16px;
+            background: rgba(0,0,0,0.15);
+        }
+        .summary-item {
+            background: var(--bg-card);
+            padding: 12px;
+            border-radius: var(--radius-md);
+            text-align: center;
+            border: 1px solid #222d34;
+        }
+        .summary-item span { display: block; font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase; margin-bottom: 4px;}
+        .summary-item strong { font-size: 1.2rem; color: var(--text-main); }
+
+        /* Filtro de Data para a Roda */
+        .date-filter-container {
+            padding: 12px 16px;
+            background: var(--bg-panel);
+            display: flex; align-items: center; justify-content: space-between;
+            border-bottom: 1px solid #222d34;
+        }
+        .date-filter-container input {
+            background: var(--bg-card); border: 1px solid #3b4a54; color: white;
+            padding: 6px 12px; border-radius: 6px; font-weight: 600;
+        }
+
+        /* Listas Estilo WhatsApp Moderno */
+        .list-section { 
+            padding: 20px 16px 8px; 
+            font-size: 0.8rem; 
+            color: var(--accent); 
+            font-weight: 700; 
+            text-transform: uppercase; 
+            letter-spacing: 1px;
+        }
+        
+        .chat-list { display: flex; flex-direction: column; background: var(--bg-panel); }
+        .chat-item {
+            display: flex; 
+            align-items: center; 
+            padding: 14px 16px;
+            border-bottom: 1px solid #222d34; 
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .chat-item:active { background: #202c33; transform: scale(0.99); }
+        
+        .avatar {
+            width: 48px; height: 48px; border-radius: 50%; background: #3d464d;
+            display: flex; align-items: center; justify-content: center; margin-right: 15px;
+            font-size: 1.2rem; color: white; flex-shrink: 0;
+        }
+
+        .chat-info { flex: 1; min-width: 0; }
+        .chat-name { font-weight: 600; font-size: 1rem; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .chat-sub { font-size: 0.85rem; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .delete-action { padding: 10px; color: var(--text-dim); transition: var(--transition); cursor: pointer; }
+        .delete-action:hover { color: var(--danger); }
+
+        /* Cards de Alunos Avançados */
+        .card {
+            background: var(--bg-card); 
+            margin: 12px 16px; 
+            padding: 16px; 
+            border-radius: var(--radius-md);
+            border-left: 5px solid transparent; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            animation: slideIn 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } }
+
+        .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; }
+        .card-title { font-weight: 600; font-size: 1.05rem; display: block; }
+        .card-sub { font-size: 0.8rem; color: var(--text-dim); display: block; margin-top: 2px; }
+        
+        /* Carteirinha Digital */
+        .carteirinha-wa {
+            background: #111b21;
+            border: 1px solid #2a3942;
+            border-radius: 8px;
+            padding: 14px;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            position: relative;
+        }
+        .carteirinha-avatar {
+            width: 48px; height: 48px; border-radius: 50%;
+            background: var(--accent); color: #fff;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.2rem; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.2); flex-shrink: 0;
+        }
+        .carteirinha-dados { flex: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+        .carteirinha-id { font-size: 0.7rem; color: var(--accent); font-weight: 700; font-family: monospace; }
+        .carteirinha-apelido { font-size: 1.1rem; font-weight: 700; color: #fff; margin-bottom: 2px; }
+        .carteirinha-item-ficha { font-size: 0.78rem; color: var(--text-dim); line-height: 1.2; display: flex; gap: 4px; align-items: center; }
+        .carteirinha-item-ficha strong { color: #e9edef; font-weight: 500; }
+        
+        /* QR Code na Carteirinha */
+        .carteirinha-qrcode-box { display: flex; flex-direction: column; align-items: center; gap: 6px; flex-shrink: 0; }
+        .carteirinha-qrcode { width: 65px; height: 65px; background: white; padding: 4px; border-radius: 4px; display: flex; align-items: center; justify-content: center; }
+        .txt-registro-entrada { font-size: 0.65rem; color: #25d366; font-weight: bold; text-transform: uppercase; text-align: center; display: none; }
+        .txt-registro-entrada.show { display: block; }
+
+        /* Área de Impressão de Carteirinhas */
+        .print-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 16px;
+            padding: 16px;
+        }
+        .print-grid .carteirinha-wa {
+            margin-bottom: 0;
+            background: #202c33;
+        }
+
+        /* Botões de Ação Dinâmicos */
+        .btn-group { display: flex; gap: 8px; flex-wrap: wrap; width: 100%; margin-top: 5px;}
+        .btn {
+            border: none; border-radius: 8px; padding: 10px 14px; font-weight: 600;
+            cursor: pointer; font-size: 0.85rem; display: inline-flex; align-items: center; 
+            justify-content: center; gap: 6px; transition: var(--transition); flex: 1; min-width: 70px;
+        }
+        .btn:active { transform: scale(0.95); }
+        
+        .btn-p { background: var(--accent); color: white; }
+        .btn-f { background: var(--danger); color: white; }
+        .btn-a { background: var(--warning); color: #000; }
+        .btn-wa { background: #25d366; color: white; }
+        .btn-ghost { background: #2a3942; color: var(--text-main); }
+        .btn-ghost.active-P { background: var(--accent); color: white; }
+        .btn-ghost.active-F { background: var(--danger); color: white; }
+        .btn-ghost.active-A { background: var(--warning); color: black; }
+
+        /* FAB (Floating Action Button) */
+        .fab {
+            position: fixed; bottom: 30px; right: 25px; width: 60px; height: 60px;
+            border-radius: 50%; background: var(--accent); border: none;
+            color: white; font-size: 1.5rem; box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            transition: var(--transition); z-index: 90;
+        }
+        .fab:active { transform: scale(0.9) rotate(90deg); }
+
+        /* Estilização Nova da Ficha de Matrícula */
+        .modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.75); backdrop-filter: blur(4px);
+            display: none; align-items: flex-start; justify-content: center; z-index: 200;
+            padding: 16px; overflow-y: auto;
+        }
+        .modal-content { 
+            background: #1e1e1e; width: 100%; max-width: 420px; 
+            padding: 20px; border-radius: 12px; border-top: 6px solid #fbc02d; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5); margin-top: 20px; margin-bottom: 20px;
+        }
+        .modal-content h2 { text-align: center; color: #fbc02d; margin-top: 0; margin-bottom: 15px; font-size: 1.3rem; }
+        .modal-group { margin-bottom: 12px; text-align: left;}
+        .modal-group label { display: block; font-size: 12px; color: #aaa; margin-bottom: 4px; font-weight: bold; }
+        .modal-content input {
+            width: 100%; padding: 10px; background: #2a2a2a; border: 1px solid #333; 
+            color: white; border-radius: 6px; font-size: 15px;
+        }
+        .modal-content input:focus { border-color: #fbc02d; outline: none; }
+        .sucesso-interna { text-align: center; color: #4caf50; padding: 20px; display: none; }
+
+        .screen { display: none; animation: fadeIn 0.25s ease; }
+        .screen.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* Scanner Box */
+        #scanner-container { width: 100%; max-width: 350px; background: #000; border-radius: 12px; overflow: hidden; margin: 20px auto; border: 2px solid var(--accent); }
+
+        /* Alerta de Entrada Rápida */
+        #toast-presenca {
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px);
+            background: #25d366; color: white; padding: 12px 24px; border-radius: 30px;
+            font-weight: bold; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 400;
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex; align-items: center; gap: 8px; font-size: 0.95rem;
+        }
+        #toast-presenca.show { transform: translateX(-50%) translateY(0); }
+
+        /* REGRAS EXCLUSIVAS DE IMPRESSÃO */
+        @media print {
+            body { background: white; color: black; padding-bottom: 0; }
+            .app-bar, .fab, .sidebar, .sidebar-overlay, #areaBotaoPrint { display: none !important; }
+            .screen { display: none !important; }
+            #screen-print-carteirinhas { display: block !important; }
+            .print-grid { display: grid !important; grid-template-columns: repeat(2, 1fr) !important; gap: 25px !important; padding: 0 !important; }
+            .carteirinha-wa { 
+                background: white !important; 
+                border: 2px solid #000 !important; 
+                color: black !important;
+                page-break-inside: avoid;
+                padding: 15px !important;
+            }
+            .carteirinha-avatar { background: black !important; color: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .carteirinha-id { color: black !important; }
+            .carteirinha-apelido { color: black !important; }
+            .carteirinha-item-ficha { color: #222 !important; }
+            .carteirinha-item-ficha strong { color: black !important; }
+            .carteirinha-qrcode { border: 1px solid #000 !important; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-bar">
+    <i class="fas fa-arrow-left back-btn" id="btnBack" style="display:none" onclick="navegar('home')"></i>
+    <h1 id="appTitle">Capoeira Manager</h1>
+    <i class="fas fa-bars menu-btn" id="btnMenu" onclick="toggleSidebar(true)"></i>
+</div>
+
+<!-- Notificação Flutuante de Presença Registrada por QR Code -->
+<div id="toast-presenca"><i class="fas fa-check-circle"></i> Presença Registrada! Axé!</div>
+
+<!-- MENU LATERAL (DRAWER) -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar(false)"></div>
+<div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <span class="sidebar-title">Painel Geral</span>
+        <i class="fas fa-times menu-btn" onclick="toggleSidebar(false)"></i>
+    </div>
+    
+    <span class="menu-section-title">Secretaria</span>
+    <div class="menu-item" onclick="navegar('chamada-conversas')" style="color: var(--accent)">
+        <i class="fas fa-qrcode" style="color: var(--accent)"></i> Chamada por QR Code
+    </div>
+    <div class="menu-item" onclick="navegar('print-carteirinhas')">
+        <i class="fas fa-id-card"></i> Imprimir Carteirinhas
+    </div>
+    <div class="menu-item" onclick="navegar('chamada-conversas')">
+        <i class="fas fa-chart-line"></i> Relatório Frequência
+    </div>
+    <div class="menu-item" onclick="abrirMuralAvisos()">
+        <i class="fas fa-bullhorn"></i> Mural de Avisos (Zap)
+    </div>
+
+    <span class="menu-section-title">Dados e Nuvem</span>
+    <div class="menu-item" onclick="exportarBackup()">
+        <i class="fas fa-download"></i> Exportar Backup (JSON)
+    </div>
+    <div class="menu-item" onclick="document.getElementById('fileBackup').click()">
+        <i class="fas fa-upload"></i> Importar Backup
+    </div>
+    <input type="file" id="fileBackup" style="display:none" onchange="importarBackup(this)" accept=".json">
+    
+    <div class="menu-item" onclick="gerarDadosFicticios()">
+        <i class="fas fa-database"></i> Gerar Alunos de Teste
+    </div>
+    <hr style="border: 0; border-top: 1px solid #222d34; margin-top: 10px;">
+    <div class="menu-item danger" onclick="limparBancoDados()">
+        <i class="fas fa-exclamation-triangle"></i> Limpar Todo o Sistema
+    </div>
+</div>
+
+<!-- TELA HOME -->
+<div id="screen-home" class="screen active">
+    <div class="list-section">Eventos e Fluxos</div>
+    <div class="chat-list">
+        <div class="chat-item" onclick="navegar('chamada-conversas')">
+            <div class="avatar" style="background:#00a884"><i class="fas fa-qrcode"></i></div>
+            <div class="chat-info">
+                <div class="chat-name">Chamada / Presença Instantânea</div>
+                <div class="chat-sub"><span style="color:#25d366">● Online</span> Abrir câmera e ver relatórios</div>
+            </div>
+        </div>
+        <div class="chat-item" onclick="navegar('roda')">
+            <div class="avatar" style="background:#d4a017"><i class="fas fa-drum"></i></div>
+            <div class="chat-info">
+                <div class="chat-name">Roda da Feira</div>
+                <div class="chat-sub">Presença isolada exclusiva de Domingo</div>
+            </div>
+        </div>
+        <div class="chat-item" onclick="navegar('financeiro')">
+            <div class="avatar" style="background:#3498db"><i class="fas fa-dollar-sign"></i></div>
+            <div class="chat-info">
+                <div class="chat-name">Financeiro Geral</div>
+                <div class="chat-sub">Controle e cobrança de mensalidades</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="list-section">Minhas Turmas</div>
+    <div class="chat-list" id="listaTurmas"></div>
+    
+    <button class="fab" onclick="abrirModalTurma()"><i class="fas fa-plus"></i></button>
+</div>
+
+<!-- TELA DETALHES -->
+<div id="screen-details" class="screen">
+    <div id="dateFilterArea"></div>
+    <div id="dashboardContext"></div>
+    <div id="listaAlunos"></div>
+</div>
+
+<!-- TELA NOVA: CHAT DE CHAMADA + RELATÓRIOS INTEGRADOS -->
+<div id="screen-chamada-conversas" class="screen">
+    <div style="background: rgba(0,0,0,0.2); padding: 16px; text-align: center; border-bottom: 1px solid #222d34;">
+        <span style="font-size:0.8rem; background:#202c33; padding:4px 10px; border-radius:10px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.5px;">Câmera de Leitura Ativa</span>
+        <div id="scanner-container"></div>
+        <button class="btn btn-ghost" style="max-width: 180px; margin-top:5px;" onclick="pararScanner(); navegar('home');">Fechar Câmera</button>
+    </div>
+    
+    <div class="list-section" style="margin-top:10px;"><i class="fas fa-chart-bar"></i> Relatório de Frequência dos Alunos</div>
+    <div id="listaRelatoriosConversa" class="chat-list"></div>
+</div>
+
+<!-- TELA IMPRESSÃO DE CARTEIRINHAS -->
+<div id="screen-print-carteirinhas" class="screen">
+    <div id="areaBotaoPrint" style="padding: 16px; display: flex; justify-content: center;">
+        <button class="btn btn-p" style="max-width: 250px; padding: 14px;" onclick="window.print()">
+            <i class="fas fa-print"></i> Confirmar e Imprimir
+        </button>
+    </div>
+    <div class="print-grid" id="containerTodasCarteirinhas"></div>
+</div>
+
+<button id="fabAluno" class="fab" onclick="abrirModalAluno()" style="display:none"><i class="fas fa-user-plus"></i></button>
+
+<!-- MODAL NOVA TURMA -->
+<div id="modalTurma" class="modal" onclick="fecharModalFora(event)">
+    <div class="modal-content" style="border-top-color: var(--accent);">
+        <h2 style="color: var(--text-main); font-size: 1.2rem; text-align: left;">Nova Turma</h2>
+        <div class="modal-group" style="margin-top: 15px;">
+            <label>Nome da Turma</label>
+            <input type="text" id="t_nome" placeholder="Ex: Terça e Quinta - 19h">
+        </div>
+        <div style="display:flex; gap:10px; margin-top:20px">
+            <button class="btn btn-ghost" style="flex:1" onclick="fecharModais()">Cancelar</button>
+            <button class="btn btn-p" style="flex:1" onclick="criarTurma()">Criar Turma</button>
+        </div>
+    </div>
+</div>
+
+<!-- MURAL DE AVISOS RAPIDOS -->
+<div id="modalAvisos" class="modal" onclick="fecharModalFora(event)">
+    <div class="modal-content" style="border-top-color: var(--accent);">
+        <h2 style="color: var(--text-main); font-size: 1.2rem; text-align: left; margin-bottom: 15px;">Avisos Rápidos (WhatsApp)</h2>
+        <p style="font-size: 0.85rem; color: var(--text-dim); margin-bottom: 15px;">Clique para cópia ou disparo de avisos gerais formatados:</p>
+        <button class="btn btn-ghost" style="width:100%; text-align:left; margin-bottom:10px; justify-content:flex-start;" onclick="dispararAvisoGeral('Aviso de Treino Normal', 'Salve família! Lembrando que hoje nossos treinos acontecem no horário normal. Preparem seus uniformes, axé!')">🤸‍♂️ Lembrete de Treino</button>
+        <button class="btn btn-ghost" style="width:100%; text-align:left; margin-bottom:10px; justify-content:flex-start;" onclick="dispararAvisoGeral('Convocação para Roda', 'Salve capoeiristas! Domingo é dia de Roda da Feira. Contamos com a energia e o Axé de todos vocês na nossa união!')">🥁 Convocação para Roda</button>
+        <button class="btn btn-ghost" style="width:100%; text-align:left; justify-content:flex-start;" onclick="fecharModais()">Sair</button>
+    </div>
+</div>
+
+<!-- MODAL FICHA DE MATRÍCULA -->
+<div id="modalAluno" class="modal" onclick="fecharModalFora(event)">
+    <div class="modal-content" id="formBox">
+        <h2>Ficha de Matrícula Online 🤸‍♂️</h2>
+        <form id="cadastroForm" onsubmit="salvarAlunoForm(event)">
+            <div class="modal-group"><label>Associação / Grupo *</label><input type="text" id="assoc" required placeholder="Ex: Cordão de Ouro"></div>
+            <div class="modal-group"><label>Nome Civil Completo *</label><input type="text" id="nome" required></div>
+            <div class="modal-group"><label>Apelido na Roda *</label><input type="text" id="apelido" required placeholder="Se não tiver, 'Nenhum'"></div>
+            <div class="modal-group"><label>Graduação / Corda Atual *</label><input type="text" id="corda" required></div>
+            <div class="modal-group"><label>Data de Nascimento *</label><input type="date" id="dn" required></div>
+            <div class="modal-group"><label>Nome do Mestre / Professor *</label><input type="text" id="prof" required></div>
+            <div class="modal-group"><label>Nome do Responsável Legal *</label><input type="text" id="resp" required placeholder="Se maior de idade, seu nome"></div>
+            <div class="modal-group"><label>Telefone do Responsável *</label><input type="text" id="tel" placeholder="(00) 00000-0000" required></div>
+            <div class="modal-group"><label>Contato de Emergência Extra *</label><input type="text" id="emerg" placeholder="Nome + Número" required></div>
+            <div class="modal-group"><label>Problema de Saúde / Alergia *</label><input type="text" id="saude" placeholder="Se saudável, 'Nenhuma'" required></div>
+            <div class="modal-group"><label>Validade da Matrícula / Exame *</label><input type="date" id="validade" required></div>
+            
+            <div style="display:flex; gap:10px; margin-top:20px">
+                <button type="button" class="btn btn-ghost" style="flex:1;" onclick="fecharModais()">Cancelar</button>
+                <button type="submit" id="btnEnviar" style="width:50%; padding:14px; background:#fbc02d; color:#000; border:none; border-radius:6px; font-weight:bold; font-size:16px; cursor:pointer;">Enviar Matrícula</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="modal-content sucesso-interna" id="sucessoBox">
+        <h2 style="color: #4caf50;">✔️ Salvo com Sucesso!</h2>
+        <p style="margin-top: 15px; color: #fff;">Sua ficha foi enviada direto para o sistema do professor e sincronizada. Axé!</p>
+        <button class="btn btn-p" style="margin-top: 25px; width:100%; background: var(--accent);" onclick="fecharModais()">Fechar Janela</button>
+    </div>
+</div>
+
+<script>
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyACnQUrwrhaF7S_3W3MbNcdknUvrHkZYag",
+  authDomain: "whats-34ca1.firebaseapp.com",
+  projectId: "whats-34ca1",
+  storageBucket: "whats-34ca1.firebasestorage.app",
+  messagingSenderId: "666021858414",
+  appId: "1:666021858414:web:4090f30282020fc2ad6a7f",
+  measurementId: "G-GVE0FG3BP5"
+};
+
+    try {
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    } catch(e) { console.error("Firebase offline ou sem chaves completas."); }
+    
+    const dbFirebase = firebase.apps.length ? firebase.firestore() : null;
+
+    // Inicialização do Banco de Dados Local
+    let db = JSON.parse(localStorage.getItem('capoeira_ultra_db')) || { turmas: [], rodaFeiraPresencas: {} };
+    if(!db.rodaFeiraPresencas) db.rodaFeiraPresencas = {};
+    
+    let context = 'home'; 
+    let dataFiltroRoda = new Date().toISOString().split('T')[0];
+    let html5QrcodeScanner = null;
+
+    function salvarLocal() {
+        localStorage.setItem('capoeira_ultra_db', JSON.stringify(db));
+        sincronizarComFirebase();
+    }
+
+    function sincronizarComFirebase() {
+        if (!dbFirebase) return;
+        dbFirebase.collection("sistema").doc("backup_geral").set(db)
+            .then(() => console.log("Nuvem Firebase Atualizada!"))
+            .catch(err => console.error("Erro Firebase:", err));
+    }
+
+    function carregarDadosDoFirebase() {
+        if (!dbFirebase) return;
+        dbFirebase.collection("sistema").doc("backup_geral").get().then((doc) => {
+            if (doc.exists) {
+                db = doc.data();
+                if(!db.rodaFeiraPresencas) db.rodaFeiraPresencas = {};
+                localStorage.setItem('capoeira_ultra_db', JSON.stringify(db));
+                if(context === 'home') renderHome();
+            }
+        });
+    }
+    window.addEventListener('load', () => {
+        carregarDadosDoFirebase();
+        renderHome();
+    });
+
+    function toggleSidebar(open) {
+        document.getElementById('sidebar').classList.toggle('open', open);
+        document.getElementById('sidebarOverlay').style.display = open ? 'block' : 'none';
+    }
+
+    function fecharModais() {
+        document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
+    }
+    function fecharModalFora(e) {
+        if (e.target.classList.contains('modal')) fecharModais();
+    }
+
+    function navegar(destino) {
+        context = destino;
+        toggleSidebar(false);
+        pararScanner();
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        
+        const btnBack = document.getElementById('btnBack');
+        const fabAluno = document.getElementById('fabAluno');
+        const appTitle = document.getElementById('appTitle');
+        const dateFilterArea = document.getElementById('dateFilterArea');
+
+        if(destino === 'home') {
+            document.getElementById('screen-home').classList.add('active');
+            btnBack.style.display = 'none';
+            fabAluno.style.display = 'none';
+            appTitle.innerText = "Capoeira Manager";
+            renderHome();
+        } else if(destino === 'print-carteirinhas') {
+            document.getElementById('screen-print-carteirinhas').classList.add('active');
+            btnBack.style.display = 'block';
+            fabAluno.style.display = 'none';
+            appTitle.innerText = "Imprimir Carteirinhas";
+            renderTodasCarteirinhas();
+        } else if(destino === 'chamada-conversas') {
+            document.getElementById('screen-chamada-conversas').classList.add('active');
+            btnBack.style.display = 'block';
+            fabAluno.style.display = 'none';
+            appTitle.innerText = "Presença por Carteirinha";
+            inicializarScannerConversa();
+            renderRelatoriosNaConversa();
+        } else {
+            document.getElementById('screen-details').classList.add('active');
+            btnBack.style.display = 'block';
+            dateFilterArea.innerHTML = '';
+            document.getElementById('dashboardContext').innerHTML = '';
+            document.getElementById('listaAlunos').innerHTML = '';
+
+            if(destino === 'roda') {
+                appTitle.innerText = "Roda da Feira";
+                dateFilterArea.innerHTML = `
+                    <div class="date-filter-container">
+                        <span style="font-size:0.9rem; color:var(--text-dim)"><i class="fas fa-calendar-day"></i> Data da Roda:</span>
+                        <input type="date" value="${dataFiltroRoda}" onchange="atualizarDataRoda(this.value)">
+                    </div>`;
+            } else if(destino === 'financeiro') {
+                appTitle.innerText = "Financeiro Geral";
+            } else {
+                const t = db.turmas.find(x => x.id == destino);
+                appTitle.innerText = t ? t.nome : "Turma";
+                fabAluno.style.display = 'block';
+            }
+            renderAlunos();
+        }
+    }
+
+    function atualizarDataRoda(novaData) {
+        dataFiltroRoda = novaData;
+        renderAlunos();
+    }
+
+    function renderHome() {
+        const container = document.getElementById('listaTurmas');
+        container.innerHTML = '';
+        if(!db.turmas || db.turmas.length === 0) {
+            container.innerHTML = `<p style="text-align:center; padding:40px; color:var(--text-dim)">Nenhuma turma criada.</p>`;
+            return;
+        }
+        db.turmas.forEach(t => {
+            container.innerHTML += `
+                <div class="chat-item" onclick="navegar(${t.id})">
+                    <div class="avatar" style="background:var(--bg-card); border:1px solid #3b4a54"><i class="fas fa-users" style="color:var(--accent)"></i></div>
+                    <div class="chat-info">
+                        <div class="chat-name">${t.nome}</div>
+                        <div class="chat-sub">${t.alunos ? t.alunos.length : 0} alunos cadastrados</div>
+                    </div>
+                    <div class="delete-action" onclick="event.stopPropagation(); excluirTurma(${t.id})"><i class="fas fa-trash-alt"></i></div>
+                </div>`;
+        });
+    }
+
+    function getCorStatus(vencimento) {
+        if (!vencimento) return '#8696a0';
+        const hoje = new Date();
+        hoje.setHours(0,0,0,0);
+        const dataVenc = new Date(vencimento + 'T00:00:00');
+        if (dataVenc < hoje) return '#f15c6d'; 
+        const diffTime = dataVenc - hoje;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        if (diffDays <= 5) return '#e5a93b'; 
+        return '#00a884'; 
+    }
+
+    function renderAlunos() {
+        const container = document.getElementById('listaAlunos');
+        const dashContainer = document.getElementById('dashboardContext');
+        container.innerHTML = '';
+        dashContainer.innerHTML = '';
+        
+        let listaExibicao = [];
+        if(db.turmas) {
+            db.turmas.forEach(t => {
+                if(t.alunos) {
+                    t.alunos.forEach(a => {
+                        if(context === 'roda' || context === 'financeiro' || context == t.id) {
+                            listaExibicao.push({...a, nomeTurma: t.nome, turmaId: t.id});
+                        }
+                    });
+                }
+            });
+        }
+
+        if (context === 'financeiro') {
+            let totalEmDia = listaExibicao.filter(a => getCorStatus(a.vencimento) === '#00a884').length;
+            let totalAtrasados = listaExibicao.filter(a => getCorStatus(a.vencimento) === '#f15c6d').length;
+            dashContainer.innerHTML = `
+                <div class="dashboard-summary">
+                    <div class="summary-item"><span>Em Dia</span><strong>${totalEmDia}</strong></div>
+                    <div class="summary-item"><span>Atrasados</span><strong style="color:var(--danger)">${totalAtrasados}</strong></div>
+                </div>`;
+        } else if(context === 'roda') {
+            if(!db.rodaFeiraPresencas[dataFiltroRoda]) db.rodaFeiraPresencas[dataFiltroRoda] = [];
+            let totalPresentes = listaExibicao.filter(a => db.rodaFeiraPresencas[dataFiltroRoda].includes(a.id)).length;
+            dashContainer.innerHTML = `
+                <div class="dashboard-summary">
+                    <div class="summary-item"><span>Total Alunos</span><strong>${listaExibicao.length}</strong></div>
+                    <div class="summary-item"><span>Presentes</span><strong style="color:var(--accent)">${totalPresentes}</strong></div>
+                </div>`;
+        }
+
+        if(listaExibicao.length === 0) {
+            container.innerHTML = `<p style="text-align:center; padding:40px; color:var(--text-dim)">Nenhum aluno encontrado neste módulo.</p>`;
+            return;
+        }
+
+        listaExibicao.forEach(a => {
+            let corBorda = getCorStatus(a.vencimento);
+            let elementoAcoes = '';
+
+            if(context === 'financeiro') {
+                elementoAcoes = `
+                    <div class="btn-group">
+                        <button class="btn btn-p" onclick="atualizarMensalidade(${a.turmaId}, ${a.id})"><i class="fas fa-check"></i> Renovar</button>
+                        <button class="btn btn-wa" onclick="cobrarWhatsApp('${a.tel}', '${a.apelido}', '${a.vencimento}')"><i class="fab fa-whatsapp"></i> Cobrar</button>
+                    </div>`;
+            } else if(context === 'roda') {
+                let jaPresente = db.rodaFeiraPresencas[dataFiltroRoda] && db.rodaFeiraPresencas[dataFiltroRoda].includes(a.id);
+                elementoAcoes = `
+                    <div class="btn-group">
+                        <button class="btn ${jaPresente ? 'btn-p' : 'btn-ghost'}" onclick="togglePresencaRoda('${a.id}', this)">
+                            <i class="fas fa-check"></i> ${jaPresente ? 'Presente' : 'Marcar Presença'}
+                        </button>
+                    </div>`;
+            } else {
+                if(!a.presencas) a.presencas = [];
+                let hojeStr = new Date().toISOString().split('T')[0];
+                let statusHoje = a.presencas.find(p => p.data === hojeStr)?.status || '';
+
+                elementoAcoes = `
+                    <div class="btn-group">
+                        <button class="btn btn-ghost ${statusHoje==='P'?'active-P':''}" onclick="marcarPresencaTurma(${a.turmaId}, ${a.id}, 'P')">P</button>
+                        <button class="btn btn-ghost ${statusHoje==='F'?'active-F':''}" onclick="marcarPresencaTurma(${a.turmaId}, ${a.id}, 'F')">F</button>
+                        <button class="btn btn-ghost ${statusHoje==='A'?'active-A':''}" onclick="marcarPresencaTurma(${a.turmaId}, ${a.id}, 'A')">A</button>
+                        <button class="btn btn-f" style="flex:none; width:40px;" onclick="excluirAluno(${a.turmaId}, ${a.id})"><i class="fas fa-trash-alt"></i></button>
+                    </div>`;
+            }
+
+            container.innerHTML += `
+                <div class="card" style="border-left-color: ${corBorda}">
+                    <div class="carteirinha-wa">
+                        <div class="carteirinha-avatar">${a.apelido.substring(0,2).toUpperCase()}</div>
+                        <div class="carteirinha-dados">
+                            <span class="carteirinha-id">ID: ${a.id}</span>
+                            <span class="carteirinha-apelido">${a.apelido}</span>
+                            <span class="carteirinha-item-ficha"><strong>Nome:</strong> ${a.nome}</span>
+                            <span class="carteirinha-item-ficha"><strong>Corda:</strong> ${a.corda}</span>
+                            <span class="carteirinha-item-ficha"><strong>Venc:</strong> ${a.vencimento || 'Não definido'}</span>
+                        </div>
+                        <div class="carteirinha-qrcode-box">
+                            <div class="carteirinha-qrcode" id="qr_${a.id}"></div>
+                        </div>
+                    </div>
+                    ${elementoAcoes}
+                </div>`;
+
+            setTimeout(() => {
+                const qrDiv = document.getElementById(`qr_${a.id}`);
+                if(qrDiv && qrDiv.innerHTML === '') {
+                    new QRCode(qrDiv, { text: String(a.id), width: 55, height: 55, correctLevel: QRCode.CorrectLevel.L });
+                }
+            }, 50);
+        });
+    }
+
+    function renderTodasCarteirinhas() {
+        const container = document.getElementById('containerTodasCarteirinhas');
+        container.innerHTML = '';
+        let totalAlunos = 0;
+
+        db.turmas.forEach(t => {
+            if(t.alunos) {
+                t.alunos.forEach(a => {
+                    totalAlunos++;
+                    container.innerHTML += `
+                        <div class="carteirinha-wa">
+                            <div class="carteirinha-avatar">${a.apelido.substring(0,2).toUpperCase()}</div>
+                            <div class="carteirinha-dados">
+                                <span class="carteirinha-id">ID: ${a.id}</span>
+                                <span class="carteirinha-apelido">${a.apelido}</span>
+                                <span class="carteirinha-item-ficha"><strong>Nome:</strong> ${a.nome}</span>
+                                <span class="carteirinha-item-ficha"><strong>Grupo:</strong> ${a.assoc || 'Capoeira'}</span>
+                                <span class="carteirinha-item-ficha"><strong>Graduação:</strong> ${a.corda}</span>
+                                <span class="carteirinha-item-ficha"><strong>Emergência:</strong> ${a.emerg || 'Nenhum'}</span>
+                            </div>
+                            <div class="carteirinha-qrcode-box">
+                                <div class="carteirinha-qrcode" id="print_qr_${a.id}"></div>
+                            </div>
+                        </div>`;
+                    
+                    setTimeout(() => {
+                        const qrDiv = document.getElementById(`print_qr_${a.id}`);
+                        if(qrDiv) new QRCode(qrDiv, { text: String(a.id), width: 55, height: 55 });
+                    }, 50);
+                });
+            }
+        });
+    }
+
+    // --- RELATÓRIO ACOPLADO NA CONVERSA ---
+    function renderRelatoriosNaConversa() {
+        const container = document.getElementById('listaRelatoriosConversa');
+        container.innerHTML = '';
+        let totalGlobal = 0;
+
+        db.turmas.forEach(t => {
+            if(t.alunos) {
+                t.alunos.forEach(a => {
+                    totalGlobal++;
+                    let p = a.presencas || [];
+                    let qtdP = p.filter(x => x.status === 'P').length;
+                    let qtdF = p.filter(x => x.status === 'F').length;
+                    let taxa = p.length ? Math.round((qtdP / p.length) * 100) : 100;
+
+                    container.innerHTML += `
+                        <div class="chat-item">
+                            <div class="avatar" style="background:#2a3942; color:var(--accent); font-weight:bold; font-size:0.9rem;">${taxa}%</div>
+                            <div class="chat-info">
+                                <div class="chat-name">${a.apelido} <span style="font-size:0.75rem; color:var(--text-dim)">(${t.nome})</span></div>
+                                <div class="chat-sub">Presenças: ${qtdP} | Faltas: ${qtdF} | Aulas Computadas: ${p.length}</div>
+                            </div>
+                        </div>`;
+                });
+            }
+        });
+
+        if(totalGlobal === 0) {
+            container.innerHTML = `<p style="text-align:center; padding:40px; color:var(--text-dim)">Sem alunos cadastrados para amostragem.</p>`;
+        }
+    }
+
+    // --- SCANNER INTERNO DA CONVERSA ---
+    function inicializarScannerConversa() {
+        setTimeout(() => {
+            html5QrcodeScanner = new Html5QrcodeScanner("scanner-container", { fps: 10, qrbox: 230 });
+            html5QrcodeScanner.render((decodedText) => {
+                let idEscaneado = Number(decodedText.trim());
+                let encontrado = false;
+                let hojeStr = new Date().toISOString().split('T')[0];
+
+                db.turmas.forEach(t => {
+                    if(t.alunos) {
+                        let a = t.alunos.find(x => x.id === idEscaneado);
+                        if(a) {
+                            encontrado = true;
+                            if(!a.presencas) a.presencas = [];
+                            if(!a.presencas.some(p => p.data === hojeStr)) {
+                                a.presencas.push({ data: hojeStr, status: 'P' });
+                            }
+                        }
+                    }
+                });
+
+                if(encontrado) {
+                    salvarLocal();
+                    renderRelatoriosNaConversa(); // Atualiza a frequência instantaneamente na tela
+                    let toast = document.getElementById('toast-presenca');
+                    toast.classList.add('show');
+                    setTimeout(() => toast.classList.remove('show'), 3000);
+                } else {
+                    alert("ID de Aluno não localizado no banco!");
+                }
+            }, (error) => {});
+        }, 300);
+    }
+
+    function pararScanner() {
+        if(html5QrcodeScanner) {
+            html5QrcodeScanner.clear().catch(err => console.log("Scanner parado"));
+            html5QrcodeScanner = null;
+        }
+    }
+
+    // --- FUNÇÕES DE CADASTROS E AUXILIARES ---
+    function abrirModalTurma() {
+        document.getElementById('t_nome').value = '';
+        document.getElementById('modalTurma').style.display = 'flex';
+    }
+
+    function criarTurma() {
+        const nome = document.getElementById('t_nome').value.trim();
+        if(!nome) return;
+        db.turmas.push({ id: Date.now(), nome: nome, alunos: [] });
+        salvarLocal();
+        fecharModais();
+        renderHome();
+    }
+
+    function excluirTurma(id) {
+        if(confirm("Deseja realmente deletar esta turma e todos os alunos dela?")) {
+            db.turmas = db.turmas.filter(t => t.id != id);
+            salvarLocal();
+            renderHome();
+        }
+    }
+
+    function abrirModalAluno() {
+        document.getElementById('cadastroForm').reset();
+        document.getElementById('formBox').style.display = 'block';
+        document.getElementById('sucessoBox').style.display = 'none';
+        document.getElementById('modalAluno').style.display = 'flex';
+    }
+
+    function salvarAlunoForm(e) {
+        e.preventDefault();
+        const novaFicha = {
+            id: Date.now(),
+            assoc: document.getElementById('assoc').value,
+            nome: document.getElementById('nome').value,
+            apelido: document.getElementById('apelido').value,
+            corda: document.getElementById('corda').value,
+            dn: document.getElementById('dn').value,
+            prof: document.getElementById('prof').value,
+            resp: document.getElementById('resp').value,
+            tel: document.getElementById('tel').value,
+            emerg: document.getElementById('emerg').value,
+            saude: document.getElementById('saude').value,
+            vencimento: document.getElementById('validade').value,
+            presencas: []
+        };
+
+        let tIndex = db.turmas.findIndex(x => x.id == context);
+        if(tIndex !== -1) {
+            if(!db.turmas[tIndex].alunos) db.turmas[tIndex].alunos = [];
+            db.turmas[tIndex].alunos.push(novaFicha);
+            salvarLocal();
+            document.getElementById('formBox').style.display = 'none';
+            document.getElementById('sucessoBox').style.display = 'block';
+            renderAlunos();
+        }
+    }
+
+    function excluirAluno(turmaId, alunoId) {
+        if(confirm("Excluir este capoeirista permanentemente?")) {
+            let t = db.turmas.find(x => x.id == turmaId);
+            if(t && t.alunos) {
+                t.alunos = t.alunos.filter(a => a.id != alunoId);
+                salvarLocal();
+                renderAlunos();
+            }
+        }
+    }
+
+    function marcarPresencaTurma(turmaId, alunoId, status) {
+        let t = db.turmas.find(x => x.id == turmaId);
+        if(t && t.alunos) {
+            let a = t.alunos.find(x => x.id == alunoId);
+            if(a) {
+                if(!a.presencas) a.presencas = [];
+                let hojeStr = new Date().toISOString().split('T')[0];
+                let pIndex = a.presencas.findIndex(p => p.data === hojeStr);
+                
+                if(pIndex !== -1) {
+                    if(a.presencas[pIndex].status === status) {
+                        a.presencas.splice(pIndex, 1);
+                    } else {
+                        a.presencas[pIndex].status = status;
+                    }
+                } else {
+                    a.presencas.push({ data: hojeStr, status: status });
+                }
+                salvarLocal();
+                renderAlunos();
+            }
+        }
+    }
+
+    function togglePresencaRoda(alunoId, btn) {
+        alunoId = Number(alunoId);
+        if(!db.rodaFeiraPresencas[dataFiltroRoda]) db.rodaFeiraPresencas[dataFiltroRoda] = [];
+        let list = db.rodaFeiraPresencas[dataFiltroRoda];
+        
+        if(list.includes(alunoId)) {
+            db.rodaFeiraPresencas[dataFiltroRoda] = list.filter(id => id !== alunoId);
+            btn.className = "btn btn-ghost";
+            btn.innerHTML = '<i class="fas fa-check"></i> Marcar Presença';
+        } else {
+            list.push(alunoId);
+            btn.className = "btn btn-p";
+            btn.innerHTML = '<i class="fas fa-check"></i> Presente';
+        }
+        salvarLocal();
+        renderAlunos();
+    }
+
+    function atualizarMensalidade(turmaId, alunoId) {
+        let t = db.turmas.find(x => x.id == turmaId);
+        if(t && t.alunos) {
+            let a = t.alunos.find(x => x.id == alunoId);
+            if(a) {
+                let novaData = new Date();
+                novaData.setMonth(novaData.getMonth() + 1);
+                a.vencimento = novaData.toISOString().split('T')[0];
+                salvarLocal();
+                renderAlunos();
+                alert(`Mensalidade de ${a.apelido} estendida até ${a.vencimento}!`);
+            }
+        }
+    }
+
+    function cobrarWhatsApp(telefone, apelido, vencimento) {
+        let limpo = telefone.replace(/\D/g, '');
+        if(!limpo.startsWith('55') && limpo.length <= 11) limpo = '55' + limpo;
+        let msg = encodeURIComponent(`Salve, ${apelido}! Passando para lembrar que sua mensalidade do treino venceu em ${vencimento}. Fortaleça nossa escola para mantermos o axé em dia! 🤸‍♂️🥁`);
+        window.open(`https://api.whatsapp.com/send?phone=${limpo}&text=${msg}`, '_blank');
+    }
+
+    function abrirMuralAvisos() {
+        toggleSidebar(false);
+        document.getElementById('modalAvisos').style.display = 'flex';
+    }
+
+    function dispararAvisoGeral(titulo, texto) {
+        alert("Texto copiado! Selecione o contato ou grupo a seguir.");
+        navigator.clipboard.writeText(`*${titulo}*\n\n${texto}`);
+        window.open('https://web.whatsapp.com', '_blank');
+        fecharModais();
+    }
+
+    function exportarBackup() {
+        let dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db));
+        let downloadAnchor = document.createElement('a');
+        downloadAnchor.setAttribute("href", dataStr);
+        downloadAnchor.setAttribute("download", `capoeira_manager_backup_${Date.now()}.json`);
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        downloadAnchor.remove();
+    }
+
+    function importarBackup(input) {
+        const reader = new FileReader();
+        reader.onload = function(){
+            try {
+                let parsed = JSON.parse(reader.result);
+                if(parsed.turmas) {
+                    db = parsed;
+                    if(!db.rodaFeiraPresencas) db.rodaFeiraPresencas = {};
+                    salvarLocal();
+                    renderHome();
+                    alert("Backup Restaurado com sucesso!");
+                }
+            } catch(e) { alert("Arquivo JSON inválido!"); }
+        };
+        if(input.files[0]) reader.readAsText(input.files[0]);
+    }
+
+    function gerarDadosFicticios() {
+        db.turmas = [
+            {
+                id: 101, nome: "Terça e Quinta - Regular", alunos: [
+                    { id: 201, nome: "Carlos Silva", apelido: "Meia Lua", corda: "Cruzeta", tel: "5511999999999", vencimento: "2026-12-10", presencas: [] },
+                    { id: 202, nome: "Beatriz Ramos", apelido: "Sereia", corda: "Laranja", tel: "5511888888888", vencimento: "2026-05-01", presencas: [] }
+                ]
+            }
+        ];
+        salvarLocal();
+        renderHome();
+        alert("Alunos de teste injetados!");
+    }
+
+    function limparBancoDados() {
+        if(confirm("ATENÇÃO: Isso deletará permanentemente todos os alunos e turmas localmente e na nuvem. Confirmar?")) {
+            db = { turmas: [], rodaFeiraPresencas: {} };
+            salvarLocal();
+            renderHome();
+        }
+    }
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js')
+      .then(() => console.log('Service Worker registrado com sucesso!'))
+      .catch(err => console.log('Erro ao registrar SW:', err));
+  }
+
+</script>
+</body>
+</html>
