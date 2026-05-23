@@ -7,7 +7,11 @@
 
 <link rel="manifest" href="./manifest.json">
 <meta name="theme-color" content="#00a884">
-<link rel="apple-touch-icon" href="./icon-192.png">
+<link rel="apple-touch-icon" href="./icons/icon-v2-192.png">
+
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
@@ -488,7 +492,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyACnQUrwrhaF7S_3W3MbNcdknUvrHkZYag",
   authDomain: "whats-34ca1.firebaseapp.com",
   projectId: "whats-34ca1",
-  storageBucket: "whats-34ca1.firebasestorage.app",
+  storageBucket: "whats-34ca1.appspot.com",
   messagingSenderId: "666021858414",
   appId: "1:666021858414:web:4090f30282020fc2ad6a7f",
   measurementId: "G-GVE0FG3BP5"
@@ -1044,23 +1048,35 @@ const firebaseConfig = {
         }
     }
 
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js')
-      .then(() => console.log('Service Worker registrado com sucesso!'))
-      .catch(err => console.log('Erro ao registrar SW:', err));
-  }
-
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js')
-    .then(reg => {
+
+  window.addEventListener('load', async () => {
+
+    try {
+
+      const reg = await navigator.serviceWorker.register('./sw.js');
+
+      console.log('SW registrado com sucesso');
+
       reg.update();
 
       setInterval(() => {
         reg.update();
       }, 60000);
-    });
-}
 
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        window.location.reload();
+      });
+
+    } catch (err) {
+
+      console.error('Erro no SW:', err);
+
+    }
+
+  });
+
+}
 </script>
 </body>
 </html>

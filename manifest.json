@@ -1,11 +1,19 @@
 {
   "name": "Capoeira System Pro",
   "short_name": "Capoeira",
-  "start_url": "./",
+  "description": "Sistema profissional de gerenciamento de capoeira com presença, QR Code e financeiro.",
+  
+  "start_url": "./index.html",
+  "scope": "./",
+
   "display": "standalone",
+  "orientation": "portrait",
+
   "background_color": "#0b141a",
   "theme_color": "#00a884",
-  "orientation": "portrait",
+
+  "lang": "pt-BR",
+
   "icons": [
     {
       "src": "./icons/icon-v2-192.png",
